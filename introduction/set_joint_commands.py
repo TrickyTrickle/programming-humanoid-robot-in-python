@@ -20,7 +20,11 @@ from spark_agent import SparkAgent
 class MyAgent(SparkAgent):
     def think(self, perception):
         action = super(MyAgent, self).think(perception)
-        # YOUR CODE HERE
+
+        # makes arm hang down as the low stiffness is not enough to keep it up
+        action.stiffness["LShoulderPitch"] = 0
+        # slowly turns the head, turns faster for values closer to 1
+        action.speed["HeadYaw"] = 0.1
 
         return action
 
