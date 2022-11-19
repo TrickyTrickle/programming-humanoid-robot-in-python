@@ -7,17 +7,23 @@
 
 
 from recognize_posture import PostureRecognitionAgent
+from keyframes import leftBackToStand
+from keyframes import leftBellyToStand
 
 
 class StandingUpAgent(PostureRecognitionAgent):
     def think(self, perception):
-        self.standing_up()
+        self.standing_up(perception)
         return super(StandingUpAgent, self).think(perception)
 
-    def standing_up(self):
+    def standing_up(self, perception):
         posture = self.posture
-        # YOUR CODE HERE
 
+        if not agent.currently_executing_keyframe_motion:
+            if posture == "Back":
+                agent.keyframes = leftBackToStand()
+            elif posture == "Belly":
+                agent.keyframes = leftBellyToStand()
 
 class TestStandingUpAgent(StandingUpAgent):
     '''this agent turns off all motor to falls down in fixed cycles
@@ -29,7 +35,7 @@ class TestStandingUpAgent(StandingUpAgent):
                  sync_mode=True):
         super(TestStandingUpAgent, self).__init__(simspark_ip, simspark_port, teamname, player_id, sync_mode)
         self.stiffness_on_off_time = 0
-        self.stiffness_on_cycle = 10  # in seconds
+        self.stiffness_on_cycle = 20  # in seconds
         self.stiffness_off_cycle = 3  # in seconds
 
     def think(self, perception):

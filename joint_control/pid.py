@@ -34,11 +34,13 @@ class PIDController(object):
         self.e1 = np.zeros(size)
         self.e2 = np.zeros(size)
         # ADJUST PARAMETERS BELOW
-        delay = 0
-        self.Kp = 0
-        self.Ki = 0
-        self.Kd = 0
-        self.y = deque(np.zeros(size), maxlen=delay + 1)
+        delay = size - 1
+        self.Kp = 5
+        self.Ki = 0.2
+        self.Kd = 0.2
+        self.y = deque(np.zeros(size*2))
+        self.z = deque(np.zeros(size*2))
+        self.clamp = deque(np.zeros(size))
 
     def set_delay(self, delay):
         '''
@@ -46,13 +48,69 @@ class PIDController(object):
         '''
         self.y = deque(self.y, delay + 1)
 
+    """
+    def control(self, target, sensor):
+
+    for n in range(len(target)):
+        target_val = target[n]
+        sensor_val = sensor[n]
+
+        error = target_val - sensor_val
+
+        I_error = self.z[(n*2)+1]
+
+        if self.clamp[n] == 0:
+            I_error += error * self.dt
+        else:
+            I_error += 0
+
+        self.z[(n*2)+1] = I_error
+
+        D_error = (error - self.z[n*2]) / self.dt
+
+        self.z[n*2] = error
+
+        PID = self.Kp * error + self.Ki * I_error + self.Kd * D_error
+
+        if PID > 1 or PID < 0:
+            self.u[n] = 1
+            signs = np.sign([error, PID])
+
+            if signs[0] == signs[1]:
+                self.clamp[n] = 1
+            else:
+                self.clamp[n] = 0
+        else:
+            self.u[n] = PID
+            self.clamp[n] = 0
+
+    return self.u
+    """
+
     def control(self, target, sensor):
         '''apply PID control
         @param target: reference values
         @param sensor: current values from sensor
         @return control signal
         '''
-        # YOUR CODE HERE
+
+        for n in range(len(target)):
+            target_val = target[n]
+            sensor_val = sensor[n]
+
+            error = target_val - sensor_val
+
+            I_error = self.z[(n*2)+1]
+            I_error += error * self.dt
+            self.z[(n*2)+1] = I_error
+
+            D_error = (error - self.z[n*2]) / self.dt
+
+            self.z[n*2] = error
+
+            PID = self.Kp * error + self.Ki * I_error + self.Kd * D_error
+
+            self.u[n] = PID
 
         return self.u
 
@@ -76,7 +134,7 @@ class PIDAgent(SparkAgent):
         self.target_joints: target positions (dict: joint_id -> position (target)) '''
         joint_angles = np.asarray(
             [perception.joint[joint_id]  for joint_id in JOINT_CMD_NAMES])
-        target_angles = np.asarray([self.target_joints.get(joint_id, 
+        target_angles = np.asarray([self.target_joints.get(joint_id,
             perception.joint[joint_id]) for joint_id in JOINT_CMD_NAMES])
         u = self.joint_controller.control(target_angles, joint_angles)
         action.speed = dict(zip(JOINT_CMD_NAMES.keys(), u))  # dict: joint_id -> speed
